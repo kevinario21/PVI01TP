@@ -1,66 +1,76 @@
 using UnityEngine;
 
-public class PlayerController : MonoBehaviour
+[RequireComponent(typeof(Rigidbody))]
+public class PlayerMovement : MonoBehaviour
 {
-    [Header("Movimiento")]
-    [SerializeField] private float velocity = 5f;
+    [Header("Configuración de Movimiento")]
+    public float velocidadCaminar = 5f;
 
-    [Header("Salto")]
-    public float fuerza1 = 7f;
-    public float fuerza2 = 10f;
-    private int saltos = 0;
+    [Header("Configuración de Salto")]
+    public float fuerzaSalto = 7f;
+
     private Rigidbody rb;
+    private bool enSuelo = true;
+    private float horizontal;
+    private float vertical;
 
     void Start()
     {
         rb = GetComponent<Rigidbody>();
-
-        
-        rb.freezeRotation = true;
+        rb.constraints = RigidbodyConstraints.FreezeRotation;
     }
 
     void Update()
     {
-        Movement();
-        Jump();
-    }
+        horizontal = Input.GetAxis("Horizontal"); // A y D
+        vertical = Input.GetAxis("Vertical");     // W y S
 
-    public void Movement()
-    {
-        float horizontal = Input.GetAxis("Horizontal");
-        float vertical = Input.GetAxis("Vertical");
-
-        
-        Vector3 direccion = new Vector3(-vertical, 0f, horizontal);
-
-        if (direccion.magnitude > 0.1f)
+        // SALTO
+        if (Input.GetKeyDown(KeyCode.Space) && enSuelo)
         {
-            transform.LookAt(transform.position + direccion);
-            transform.Translate(Vector3.forward * velocity * Time.deltaTime, Space.Self);
-        }
-    }
-
-    public void Jump()
-    {
-        if (Input.GetKeyDown(KeyCode.Space) && saltos < 1)
-        {
+            enSuelo = false;
             
-            rb.linearVelocity = new Vector3(rb.linearVelocity.x, 0, rb.linearVelocity.z);
+            // Al saltar, nos desvinculamos inmediatamente de cualquier plataforma o padre
+            transform.SetParent(null);
 
-            
-            rb.AddForce(Vector3.up * (saltos == 0 ? fuerza1 : fuerza2), ForceMode.Impulse);
-            saltos++;
+            rb.linearVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
+            rb.AddForce(Vector3.up * fuerzaSalto, ForceMode.Impulse);
         }
     }
 
-    void OnCollisionEnter(Collision c)
+    void FixedUpdate()
     {
-       
-        if (c.contacts[0].normal.y > 0.5f)
+        // Movimiento físico respetando la gravedad/velocidad vertical
+        Vector3 velocidadMovimiento = new Vector3(-horizontal * velocidadCaminar, rb.linearVelocity.y, -vertical * velocidadCaminar);
+        rb.linearVelocity = velocidadMovimiento;
+    }
+
+    private void OnCollisionStay(Collision collision)
+    {
+        foreach (ContactPoint contacto in collision.contacts)
         {
-            saltos = 0;
-            rb.linearVelocity = new Vector3(rb.linearVelocity.x, Mathf.Min(rb.linearVelocity.y, 0), rb.linearVelocity.z);
+            if (contacto.normal.y > 0.5f)
+            {
+                enSuelo = true;
+
+                // Si lo que estamos pisando tiene la etiqueta "Plataforma", nos emparentamos aquí mismo
+                if (collision.gameObject.CompareTag("Plataforma"))
+                {
+                    transform.SetParent(collision.transform);
+                }
+                break;
+            }
         }
+    }
+
+    private void OnCollisionExit(Collision collision)
+    {
+        // Si dejamos de tocar la plataforma, nos desvinculamos
+        if (collision.gameObject.CompareTag("Plataforma"))
+        {
+            transform.SetParent(null);
+        }
+
+        enSuelo = false;
     }
 }
-    
