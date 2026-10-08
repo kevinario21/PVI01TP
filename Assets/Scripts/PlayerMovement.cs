@@ -7,7 +7,7 @@ public class PlayerMovement : MonoBehaviour
     public float velocidadCaminar = 5f;
 
     [Header("Configuración de Salto")]
-    public float fuerzaSalto = 7f;
+    public float fuerzaSalto = 10f;
 
     private Rigidbody rb;
     private bool enSuelo = true;
