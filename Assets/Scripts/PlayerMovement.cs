@@ -4,10 +4,15 @@ using UnityEngine;
 public class PlayerMovement : MonoBehaviour
 {
     [Header("Configuración de Movimiento")]
-    public float velocidadCaminar = 5f;
+     public float velocidadCaminar = 5f;
+
 
     [Header("Configuración de Salto")]
     public float fuerzaSalto = 10f;
+    public float fuerzaDoble = 10f;
+
+    private int maximosSaltos = 1;
+    private int saltosRealizados = 0;
 
     private Rigidbody rb;
     private bool enSuelo = true;
@@ -22,25 +27,39 @@ public class PlayerMovement : MonoBehaviour
 
     void Update()
     {
-        horizontal = Input.GetAxis("Horizontal"); // A y D
-        vertical = Input.GetAxis("Vertical");     // W y S
+        horizontal = Input.GetAxis("Horizontal");
+        vertical = Input.GetAxis("Vertical");
 
-        // SALTO
-        if (Input.GetKeyDown(KeyCode.Space) && enSuelo)
+        // SALTO Y DOBLE SALTO
+        if (Input.GetKeyDown(KeyCode.Space))
         {
-            enSuelo = false;
-            
-            // Al saltar, nos desvinculamos inmediatamente de cualquier plataforma o padre
-            transform.SetParent(null);
-
-            rb.linearVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
-            rb.AddForce(Vector3.up * fuerzaSalto, ForceMode.Impulse);
+            if (enSuelo)
+            {
+                // Primer salto desde el suelo
+                EjecutarSalto(fuerzaSalto);
+                enSuelo = false;
+                saltosRealizados = 1;
+                transform.SetParent(null);
+            }
+            else if (saltosRealizados < maximosSaltos)
+            {
+                // Segundo salto en el aire (usando la fuerza de doble salto)
+                EjecutarSalto(fuerzaDoble);
+                saltosRealizados++;
+            }
         }
+    }
+
+    void EjecutarSalto(float fuerza)
+    {
+        // Reseteamos la velocidad vertical para un impulso limpio y consistente
+        rb.linearVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
+        rb.AddForce(Vector3.up * fuerza, ForceMode.Impulse);
     }
 
     void FixedUpdate()
     {
-        // Movimiento físico respetando la gravedad/velocidad vertical
+        
         Vector3 velocidadMovimiento = new Vector3(-horizontal * velocidadCaminar, rb.linearVelocity.y, -vertical * velocidadCaminar);
         rb.linearVelocity = velocidadMovimiento;
     }
@@ -53,7 +72,6 @@ public class PlayerMovement : MonoBehaviour
             {
                 enSuelo = true;
 
-                // Si lo que estamos pisando tiene la etiqueta "Plataforma", nos emparentamos aquí mismo
                 if (collision.gameObject.CompareTag("Plataforma"))
                 {
                     transform.SetParent(collision.transform);
@@ -65,12 +83,25 @@ public class PlayerMovement : MonoBehaviour
 
     private void OnCollisionExit(Collision collision)
     {
-        // Si dejamos de tocar la plataforma, nos desvinculamos
+        
         if (collision.gameObject.CompareTag("Plataforma"))
         {
             transform.SetParent(null);
         }
 
         enSuelo = false;
+    }
+    public void HabilitarDobleSalto()
+    {
+        maximosSaltos = 2;
+    }
+
+    public void DeshabilitarDobleSalto()
+    {
+        maximosSaltos = 1;
+        if(saltosRealizados > 1)
+        {
+            saltosRealizados = 1;
+        }
     }
 }
