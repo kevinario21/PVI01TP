@@ -9,7 +9,7 @@ public class PlayerMovement : MonoBehaviour
 
     [Header("Configuración de Salto")]
     public float fuerzaSalto = 10f;
-    public float fuerzaDoble = 10f;
+    public float fuerzaDoble = 5f;
 
     private int maximosSaltos = 1;
     private int saltosRealizados = 0;

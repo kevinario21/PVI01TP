@@ -2,15 +2,24 @@ using UnityEngine;
 
 public class Spawner : MonoBehaviour
 {
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    public GameObject piedra;
+    public float primerDelay = 2f;
+    public float intervalo = 5f;
+    public float vida = 10f;
+    public float velocidadInicial = 30f;
+
     void Start()
     {
-        
+        InvokeRepeating("CrearPiedra", primerDelay, intervalo);
     }
 
-    // Update is called once per frame
-    void Update()
+    void CrearPiedra()
     {
-        
+        GameObject nueva = Instantiate(piedra, transform.position, Quaternion.identity);
+
+        Rigidbody rbPiedra = nueva.GetComponent<Rigidbody>();
+        rbPiedra.linearVelocity = transform.forward * velocidadInicial;
+
+        Destroy(nueva, vida);
     }
 }
